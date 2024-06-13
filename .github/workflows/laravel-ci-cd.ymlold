@@ -1,0 +1,46 @@
+name: Laravel CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extraction du code
+        uses: actions/checkout@v2
+
+      - name: Configuration de PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, ctype, json, bcmath, curl
+          tools: php-cs-fixer
+          coverage: none
+
+      - name: Copie du fichier .env
+        run: cp .env.example .env
+
+      - name: Configuration de la base de données
+        run: |
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=:memory:" >> .env
+
+      - name: Installation des dépendances
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Linting avec PHP CS Fixer
+        run: php-cs-fixer fix --config=./.php-cs-fixer.dist.php --dry-run --diff --verbose || true
+
+      - name: Génération de la clé d'application
+        run: php artisan key:generate
+
+      - name: Exécution des migrations
+        run: php artisan migrate --force
+
+      - name: Exécution des tests
+        run: php artisan test
+

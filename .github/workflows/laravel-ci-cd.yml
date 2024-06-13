@@ -1,0 +1,92 @@
+name: Laravel CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version du projet
+        required: false
+        type: string
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Extraction du code
+        uses: actions/checkout@v2
+
+      - name: Configuration de PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: mbstring, xml, ctype, json, bcmath, curl
+          tools: php-cs-fixer
+          coverage: none
+
+      - name: Copie du fichier .env
+        run: cp .env.example .env
+
+      - name: Configuration de la base de données
+        run: |
+            sed -i 's/DB_CONNECTION=.*$/DB_CONNECTION=sqlite/' .env
+            sed -i 's/DB_DATABASE=.*$/DB_DATABASE=:memory:/' .env
+
+      - name: Installation des dépendances
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Linting avec PHP CS Fixer
+        run: php-cs-fixer fix --config=./.php-cs-fixer.dist.php --dry-run --diff --verbose || true
+
+      - name: Génération de la clé d'application
+        run: php artisan key:generate
+
+      - name: Exécution des migrations
+        id: migrate
+        run: php artisan migrate --force
+
+      # - name: Exécution des tests
+      #   run: php artisan test
+
+      - name: Créer un tag GitHub
+        if: ${{ github.event.inputs.version }}
+        id: create_tag
+        run: |
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
+      # - name: Create Release
+      #   if: ${{ github.event.inputs.version }}
+      #   uses: ncipollo/release-action@v1
+      #   with:
+      #     generateReleaseNotes: true
+      #     tag: v${{ steps.version.outputs.VERSION }}
+
+      - name: Créer une release GitHub
+        run: |
+          curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/nolan450/movies_webservices/releases \
+          -d '{"tag_name": "v$${{ github.event.inputs.version }}", "name": "v${{ github.event.inputs.version }}", "body": "Release v${{ github.event.inputs.version }}" }'
+
+      - name: Build Docker image
+        if: ${{ github.event.inputs.version }}
+        run: docker build . -t ghcr.io/nolan450/movies_api:${{ github.sha }}
+
+      - name: Login to GitHub Container Registry
+        if: ${{ github.event.inputs.version }}
+        run: echo ${{ secrets.MY_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ secrets.LOGIN }} --password-stdin
+
+      - name: Push Docker image to GitHub Container Registry
+        if: ${{ github.event.inputs.version }}
+        run: docker push ghcr.io/nolan450/movies_api:${{ github.sha }}
+
+      - name: Notification Teams
+        if: always()
+        run: |
+          curl -H 'Content-Type: application/json' -d "{\"text\": \"${{ github.workflow }}: ${{ job.status }}\"}" ${{ secrets.WEBHOOK_TEAMS }}

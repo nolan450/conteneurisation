@@ -1,0 +1,145 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: WSMovies
+  description: API permettant de consulter, créer, modifier et supprimer des films.
+servers:
+- url: http://localhost:8000
+  description: Local Environment
+tags:
+  - name: Movies
+    description: Accès à nos films disponibles
+
+paths:
+  /api/movies/{output/format}:
+    get:
+      tags:
+        - "Movies"
+      summary: Récupérer une liste de tout les films disponibles
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/definitions/moviesIndex"
+            application/xml:
+              schema:
+                $ref: "#/definitions/moviesIndex"
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
+  /api/movie/{movie}/{output_format}:
+    get:
+      tags:
+        - "Movies"
+      summary: Récupérer le film désigné
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/definitions/movieShow"
+            application/xml:
+              schema:
+                $ref: "#/definitions/movieShow"
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
+    put:
+      tags:
+        - "Movies"
+      summary: Modifie le film désigné
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/definitions/movieUpdate"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/definitions/movieShow"
+            application/xml:
+              schema:
+                $ref: "#/definitions/movieShow"
+  /movie/{output_format}:
+    post:
+      tags:
+        - "Movies"
+      summary: Crée un film
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/definitions/movieUpdate"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/definitions/movieShow"
+            application/xml:
+              schema:
+                $ref: "#/definitions/movieShow"
+  /api/movie/{movie}:
+    delete:
+      tags:
+        - "Movies"
+      summary: Supprime le film désigné
+      responses:
+        200:
+          description: OK
+
+
+
+definitions:
+  moviesIndex:
+    type: array
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        release_date:
+          type: string
+        note:
+          type: integer
+  movieShow:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      release_date:
+        type: string
+      note:
+        type: integer
+  movieUpdate:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      release_date:
+        type: string
+      note:
+        type: integer
