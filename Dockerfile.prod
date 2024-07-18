@@ -1,0 +1,55 @@
+# Étape de construction
+FROM php:8.1-apache AS build
+
+# Installer les dépendances système pour les extensions PHP et Composer
+RUN apt-get update && apt-get install -y \
+    libpng-dev libonig-dev libxml2-dev zip unzip git curl ca-certificates \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Installer Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Définir le répertoire de travail
+WORKDIR /var/www/html
+
+# Copier les fichiers de l'application dans le conteneur
+COPY . .
+
+# Copier le fichier .env
+COPY .env /var/www/html/.env
+
+# Installer les dépendances Composer en mode production
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-plugins --no-scripts
+
+# Effacer le cache de configuration et autres caches
+RUN php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan route:clear && \
+    php artisan view:clear
+
+# Étape de production
+FROM php:8.1-apache
+
+# Copier uniquement les fichiers nécessaires de l'étape de construction
+COPY --from=build /var/www/html /var/www/html
+
+# Copier le fichier de configuration personnalisé pour Apache
+COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
+
+# Activer le mod_rewrite pour Apache
+RUN a2enmod rewrite
+
+# Définir les permissions appropriées pour les dossiers et fichiers
+RUN chown -R www-data:www-data /var/www/html && \
+    find /var/www/html -type d -exec chmod 755 {} \; && \
+    find /var/www/html -type f -exec chmod 644 {} \;
+
+# Activer la nouvelle configuration du site
+RUN a2ensite 000-default
+
+# Exposer le port 80
+EXPOSE 80
+
+# Commande pour démarrer les services nécessaires
+CMD ["sh", "-c", "php artisan key:generate && apache2-foreground"]

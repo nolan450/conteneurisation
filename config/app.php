@@ -155,7 +155,7 @@ return [
     |
     */
 
-    'providers' => ServiceProvider::defaultProviders()->merge([
+    'providers' => ServiceProvider::defaultProviders()->merge(array_filter([
         /*
          * Package Service Providers...
          */
@@ -168,7 +168,10 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-    ])->toArray(),
+
+        // Ajoutez ce fournisseur uniquement en mode développement
+        app()->environment('local') ? NunoMaduro\Collision\Adapters\Laravel\CollisionServiceProvider::class : null,
+    ]))->toArray(),
 
     /*
     |--------------------------------------------------------------------------

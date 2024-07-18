@@ -1,7 +1,4 @@
 # Contexte du projet
-> Projet en *collaboration* avec **Bonal Tristan**, **Hamzaoui Ammar** et **El Assi Nolan**.
-
-Pour un cours sur les Web Services nous devions en faire un pour des films. 
 
 ## Prérequis
 
@@ -13,52 +10,28 @@ Assurez-vous d'avoir installé les outils suivants avant de commencer :
 ## Clonage du projet
 
 ```sh
-git clone https://gitlab.com/manzoneflorianpro/wsmovies.git
+git clone https://github.com/nolan450/conteneurisation.git
 ```
 
-## Build et lancement des containers
+## Utilisation des Dockerfiles
 
-```sh
-docker-compose up -d --build
+### Environnement de développement
+
+Pour construire et lancer l'image Docker pour l'environnement de développement, exécutez les commandes suivantes :
+
+```bash
+docker build -f Dockerfile.dev -t conteneurisation-symfony-dev .
+docker run -p 80:80 conteneurisation-symfony-dev
 ```
 
-## Installation des dépendances
+### Environnement de production
 
-Une fois le projet cloné, vous devez installer les dépendances pour qu'il puisse fonctionner correctement.
+Pour construire et lancer l'image Docker pour l'environnement de production, exécutez les commandes suivantes :
 
-```sh
-composer install && composer require spatie/array-to-xml
-
-docker-compose exec app composer install
+```bash
+docker build -f Dockerfile.prod -t conteneurisation-symfony-prod .
+docker run -p 80:80 conteneurisation-symfony-prod
 ```
-
-## Lancement du projet 
-
-Pour lancer ce projet, il suffit de créer un fichier `.env` pour cela, il y a un fichier `.env.example` qu'il faudra copier entièrement et coller dans le nouveau.
-
-La seule partie qu'il faudra modifier pour le projet est :
-
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=le_nom_de_votre_db
-DB_USERNAME=le_nom_de_votre_utilisateur
-DB_PASSWORD=votre_mdp
-```
-
-Ensuite il reste très peu de choses à faire.
-
-```sh
-docker-compose exec app php artisan migrate
-
-docker-compose exec app php artisan db:seed
-
-docker-compose exec app php artisan serve
-```
-
-## Accès au projet
-
 
 
 ## Arrêt et suppression des containers
